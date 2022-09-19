@@ -6,6 +6,7 @@ using HotelListing.Repository;
 using HotelListing.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -30,6 +31,7 @@ namespace HotelListing
                 options.UseSqlServer(Configuration.GetConnectionString("SqlConnection"))
             );
 
+            services.ConfigureHttpCacheHeaders();
             services.AddAuthentication();
             services.ConfigureIdentity();
             services.ConfigureJWT(Configuration);
@@ -53,7 +55,14 @@ namespace HotelListing
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "HotelListing", Version = "v1" });
             });
 
-            services.AddControllers().AddNewtonsoftJson(options => 
+            services.AddControllers(config =>
+            {
+                config.CacheProfiles.Add("120SecondsDuration", new CacheProfile
+                {
+                    Duration = 120
+                });
+
+            }).AddNewtonsoftJson(options => 
                 options.SerializerSettings.ReferenceLoopHandling = 
                 Newtonsoft.Json.ReferenceLoopHandling.Ignore);
             services.ConfigureVersioning();
@@ -71,6 +80,10 @@ namespace HotelListing
             app.ConfigureExceptionHandler();
             app.UseHttpsRedirection();
             app.UseCors("AllowAll");
+
+            app.UseResponseCaching();
+            app.UseHttpCacheHeaders();
+
             app.UseRouting();
 
             app.UseAuthentication();
